@@ -20,6 +20,10 @@ window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequest
 window.AudioContext = window.AudioContext || window.webkitAudioContext;
 const context = new AudioContext();
 
+const logo = new Image();
+logo.src = "https://media.discordapp.net/attachments/657589854082695188/712428097408073778/36934-thumb.png";
+
+
 let analyzer = context.createAnalyser();
 let streamSource = null;
 
@@ -32,7 +36,7 @@ const handleSuccess = function(stream) {
         streamSource = context.createMediaStreamSource(stream);
     }
     streamSource.connect(analyzer); // Visualizer
-    streamSource.connect(context.destination); // Audio output
+    // streamSource.connect(context.destination); // Audio output
 };
 
 let canvas = document.getElementById('visualizer');
@@ -122,6 +126,58 @@ function drawSpectrum() {
     }
 };
 
+function drawCircularSpectrum() {
+
+    // TO BE MOVED
+    analyzer.fftSize = 4096;
+    let bufferMemorySize = analyzer.frequencyBinCount;
+    let buffer = new Uint8Array(bufferMemorySize);
+    const SEPARATOR = 1;
+
+
+    let gradient = canvasCtx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.height / 2.5);
+    gradient.addColorStop(0, '#000000');
+    gradient.addColorStop(0.2, '#02C912');
+    gradient.addColorStop(0.4, 'yellow');
+    gradient.addColorStop(0.6, 'yellow');
+    gradient.addColorStop(1,"red");
+    // END TO BE MOVED
+
+    requestAnimationFrame(drawCircularSpectrum);
+    analyzer.getByteFrequencyData(buffer);
+
+    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    let barWidth = Math.round(360 / bufferMemorySize - SEPARATOR);
+    
+    let base = 50;
+    let x = canvas.width / 2;
+    let y = canvas.height / 2;
+
+    // canvasCtx.lineWidth = barWidth;
+    // canvasCtx.strokeStyle = '#000000';
+    
+    canvasCtx.beginPath();
+    canvasCtx.lineWidth = 2;
+    canvasCtx.arc(x, y, base, 0, Math.PI * 2, true);
+    canvasCtx.stroke();
+
+    canvasCtx.strokeStyle = gradient;
+
+    for(let i = 0; i < bufferMemorySize; i++) {
+        let barHeight = canvas.height * (buffer[i] / 255) / 3;
+
+        theta = (barWidth * i) * Math.PI / 360;
+        canvasCtx.beginPath();
+        canvasCtx.moveTo(x + base * Math.cos(theta), y + base * Math.sin(theta));
+        canvasCtx.lineTo(x + (barHeight + base) * Math.cos(theta), y + (barHeight + base) * Math.sin(theta));
+        canvasCtx.stroke();
+    }
+
+    let size = base * 2 + canvas.height * (buffer[8] / 255) / 10; // buffer[8] is totally arbitrary
+    canvasCtx.drawImage(logo, x - size / 2, y - size / 2, size, size);
+};
+
 navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(handleSuccess);
 
 canvas.addEventListener('click', function() {
@@ -138,4 +194,4 @@ canvas.addEventListener('click', function() {
     }
 });
 
-requestAnimationFrame(drawDashSpectrum);
+requestAnimationFrame(drawCircularSpectrum);
