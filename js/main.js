@@ -129,10 +129,9 @@ function drawSpectrum() {
 function drawCircularSpectrum() {
 
     // TO BE MOVED
-    analyzer.fftSize = 4096;
-    let bufferMemorySize = analyzer.frequencyBinCount;
+    analyzer.fftSize = 2048;
+    let bufferMemorySize = Math.round(analyzer.frequencyBinCount * 0.8); // A small sleight of hand to remove frequencies too high
     let buffer = new Uint8Array(bufferMemorySize);
-    const SEPARATOR = 1;
 
 
     let gradient = canvasCtx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.height / 2.5);
@@ -148,30 +147,37 @@ function drawCircularSpectrum() {
 
     canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
     
-    let barWidth = Math.round(360 / bufferMemorySize - SEPARATOR);
-    
+    let barAngle = 360 / bufferMemorySize;
+
     let base = 50;
     let x = canvas.width / 2;
     let y = canvas.height / 2;
 
-    // canvasCtx.lineWidth = barWidth;
+    // canvasCtx.lineWidth = barAngle * 2;
     // canvasCtx.strokeStyle = '#000000';
     
-    canvasCtx.beginPath();
-    canvasCtx.lineWidth = 2;
-    canvasCtx.arc(x, y, base, 0, Math.PI * 2, true);
-    canvasCtx.stroke();
+    // Central circle
+    // canvasCtx.beginPath();
+    // canvasCtx.lineWidth = 2;
+    // canvasCtx.arc(x, y, base, 0, Math.PI * 2, true);
+    // canvasCtx.stroke();
 
     canvasCtx.strokeStyle = gradient;
+    canvasCtx.fillStyle = gradient;
 
     for(let i = 0; i < bufferMemorySize; i++) {
         let barHeight = canvas.height * (buffer[i] / 255) / 3;
 
-        theta = (barWidth * i) * Math.PI / 360;
-        canvasCtx.beginPath();
-        canvasCtx.moveTo(x + base * Math.cos(theta), y + base * Math.sin(theta));
-        canvasCtx.lineTo(x + (barHeight + base) * Math.cos(theta), y + (barHeight + base) * Math.sin(theta));
-        canvasCtx.stroke();
+        theta = (barAngle * i) * Math.PI / 180;
+
+        // Points
+        canvasCtx.fillRect(x + (barHeight + base) * Math.cos(theta), y + (barHeight + base) * Math.sin(theta), 2, 2); // Just points
+        
+        // Lines
+        // canvasCtx.beginPath();
+        // canvasCtx.moveTo(x + base * Math.cos(theta), y + base * Math.sin(theta));
+        // canvasCtx.lineTo(x + (barHeight + base) * Math.cos(theta), y + (barHeight + base) * Math.sin(theta));
+        // canvasCtx.stroke();
     }
 
     let size = base * 2 + canvas.height * (buffer[8] / 255) / 10; // buffer[8] is totally arbitrary
