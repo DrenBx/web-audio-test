@@ -3,16 +3,6 @@ function resizeCanvas() {
     canvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 }
 
-// window.onload = function() {
-//     var contexteAudio = new (window.AudioContext || window.webkitAudioContext)();
-
-//     var streamSource = contexteAudio.createMediaStreamSource(stream);
-//     var noeudGain = contexteAudio.createGain();
-    
-//     streamSource.connect(noeudGain);
-//     noeudGain.connect(contexteAudio.destination);
-//   }
-
 // Define requestAnimationFrame
 window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 
@@ -21,10 +11,9 @@ window.AudioContext = window.AudioContext || window.webkitAudioContext;
 const context = new AudioContext();
 
 const logo = new Image();
-logo.src = "https://media.discordapp.net/attachments/657589854082695188/712428097408073778/36934-thumb.png";
+logo.src = "https://cdn.discordapp.com/attachments/657589854082695188/712973612113592320/unknown.png";
 
-
-let analyzer = context.createAnalyser();
+var analyzer = context.createAnalyser();
 let streamSource = null;
 
 // If you wanna use a file instead the microphone
@@ -44,145 +33,63 @@ let canvasCtx = canvas.getContext('2d');
 
 resizeCanvas();
 
-function drawDashSpectrum() {
+let radialGrad = canvasCtx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.height / 2.5);
+radialGrad.addColorStop(0, '#000000');
+radialGrad.addColorStop(0.2, '#02C912');
+radialGrad.addColorStop(0.4, 'yellow');
+radialGrad.addColorStop(0.6, 'yellow');
+radialGrad.addColorStop(1,"red");
 
-    // TO BE MOVED
-    analyzer.fftSize = 64;
-    let bufferMemorySize = analyzer.frequencyBinCount;
-    let buffer = new Uint8Array(bufferMemorySize);
-    const SEPARATOR = 6;
+let linearGrad = canvasCtx.createLinearGradient(0, canvas.height, 0, 0);
+linearGrad.addColorStop(0, '#02C912');
+linearGrad.addColorStop(0.4, 'yellow');
+linearGrad.addColorStop(0.6, 'yellow');
+linearGrad.addColorStop(1,"red");
 
-    // Gradient
-    let gradient = canvasCtx.createLinearGradient(0, canvas.height, 0, 0);
-    gradient.addColorStop(0, '#02C912');
-    gradient.addColorStop(0.4, 'yellow');
-    gradient.addColorStop(0.6, 'yellow');
-    gradient.addColorStop(1,"red");
-    // END TO BE MOVED
 
-    requestAnimationFrame(drawDashSpectrum);
-    analyzer.getByteFrequencyData(buffer);
+// let currentSpectrum = new PointSpectrum(canvasCtx, {
+//     fillStyle: radialGrad,
+// });
 
-    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+let currentSpectrum = new TriangleSpectrum(canvasCtx, {
+    fillStyle: radialGrad,
+    fftSize: 128
+});
 
-    let barWidth = Math.round(canvas.width / bufferMemorySize - SEPARATOR);
-    let x = SEPARATOR / 2 + barWidth / 2;
-    canvasCtx.lineWidth = barWidth;
-    canvasCtx.strokeStyle = gradient;
+// let currentSpectrum = new BarSpectrum(canvasCtx, {
+//     fillStyle: radialGrad,
+//     circleBase: 64,
+//     fftSize: 256
+// });
 
-    for(let i = 0; i < bufferMemorySize; i++) {
-        let barHeight = canvas.height * (buffer[i] / 255); // Reports the buffer value to 1 and multiply with the canvas height
-        canvasCtx.beginPath();
-        canvasCtx.setLineDash([24, SEPARATOR]);
-        canvasCtx.moveTo(x, canvas.height);
-        canvasCtx.lineTo(x, canvas.height - barHeight);
-        canvasCtx.stroke();
+// let currentSpectrum = new CircularSpectrum(canvasCtx, {
+//     fillStyle: radialGrad,
+// });
 
-        x += barWidth + SEPARATOR;
-    }
-};
+// let currentSpectrum = new ClassicSpectrum(canvasCtx, {
+//     strokeStyle: linearGrad,
+// });
 
-function drawSpectrum() {
+// let currentSpectrum = new DashSpectrum(canvasCtx, {
+//     strokeStyle: linearGrad,
+// });
 
-    // TO BE MOVED
-    analyzer.fftSize = 2048;
-    let bufferMemorySize = analyzer.frequencyBinCount;
-    let buffer = new Uint8Array(bufferMemorySize);
-    const SEPARATOR = 6;
+function testSpectrum() {
+    analyzer.fftSize = currentSpectrum.getfftSize();
 
-    // Gradient
-    let gradient = canvasCtx.createLinearGradient(0, canvas.height, 0, 0);
-    gradient.addColorStop(0, '#02C912');
-    gradient.addColorStop(0.4, 'yellow');
-    gradient.addColorStop(0.6, 'yellow');
-    gradient.addColorStop(1,"red");
-    // END TO BE MOVED
+    // For a high fttSize
+    let bufferMemorySize = Math.round(analyzer.frequencyBinCount * 0.6); // A small sleight of hand to remove frequencies too high
 
-    requestAnimationFrame(drawSpectrum);
-    analyzer.getByteFrequencyData(buffer);
-
-    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-    // canvasCtx.fillStyle = 'rgb(0, 0, 0)';
-    // canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-    let barWidth = Math.round(canvas.width / bufferMemorySize - SEPARATOR);
-    let x = SEPARATOR / 2 + barWidth / 2;
-    canvasCtx.lineWidth = barWidth;
-    canvasCtx.strokeStyle = gradient;
-
-    for(let i = 0; i < bufferMemorySize; i++) {
-        let barHeight = canvas.height * (buffer[i] / 255); // Reports the buffer value to 1 and multiply with the canvas height
-
-        // It works but ugly
-        // canvasCtx.fillStyle = gradient;
-        // canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-
-        canvasCtx.beginPath();
-        canvasCtx.moveTo(x, canvas.height);
-        canvasCtx.lineTo(x, canvas.height - barHeight);
-        canvasCtx.stroke();
-
-        x += barWidth + SEPARATOR;
-    }
-};
-
-function drawCircularSpectrum() {
-
-    // TO BE MOVED
-    analyzer.fftSize = 2048;
-    let bufferMemorySize = Math.round(analyzer.frequencyBinCount * 0.8); // A small sleight of hand to remove frequencies too high
+    // let bufferMemorySize = analyzer.frequencyBinCount;
     let buffer = new Uint8Array(bufferMemorySize);
 
 
-    let gradient = canvasCtx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.height / 2.5);
-    gradient.addColorStop(0, '#000000');
-    gradient.addColorStop(0.2, '#02C912');
-    gradient.addColorStop(0.4, 'yellow');
-    gradient.addColorStop(0.6, 'yellow');
-    gradient.addColorStop(1,"red");
-    // END TO BE MOVED
-
-    requestAnimationFrame(drawCircularSpectrum);
+    requestAnimationFrame(testSpectrum);
     analyzer.getByteFrequencyData(buffer);
 
-    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    let barAngle = 360 / bufferMemorySize;
-
-    let base = 50;
-    let x = canvas.width / 2;
-    let y = canvas.height / 2;
-
-    // canvasCtx.lineWidth = barAngle * 2;
-    // canvasCtx.strokeStyle = '#000000';
-    
-    // Central circle
-    // canvasCtx.beginPath();
-    // canvasCtx.lineWidth = 2;
-    // canvasCtx.arc(x, y, base, 0, Math.PI * 2, true);
-    // canvasCtx.stroke();
-
-    canvasCtx.strokeStyle = gradient;
-    canvasCtx.fillStyle = gradient;
-
-    for(let i = 0; i < bufferMemorySize; i++) {
-        let barHeight = canvas.height * (buffer[i] / 255) / 3;
-
-        theta = (barAngle * i) * Math.PI / 180;
-
-        // Points
-        canvasCtx.fillRect(x + (barHeight + base) * Math.cos(theta), y + (barHeight + base) * Math.sin(theta), 2, 2); // Just points
-        
-        // Lines
-        // canvasCtx.beginPath();
-        // canvasCtx.moveTo(x + base * Math.cos(theta), y + base * Math.sin(theta));
-        // canvasCtx.lineTo(x + (barHeight + base) * Math.cos(theta), y + (barHeight + base) * Math.sin(theta));
-        // canvasCtx.stroke();
-    }
-
-    let size = base * 2 + canvas.height * (buffer[8] / 255) / 10; // buffer[8] is totally arbitrary
-    canvasCtx.drawImage(logo, x - size / 2, y - size / 2, size, size);
-};
+    currentSpectrum.draw(buffer, canvas.width, canvas.height);
+    currentSpectrum.drawLogo(logo, canvas.width / 2, canvas.height / 2, buffer[8], canvas.height); // buffer[8] is totally arbitrary
+}
 
 navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(handleSuccess);
 
@@ -200,4 +107,4 @@ canvas.addEventListener('click', function() {
     }
 });
 
-requestAnimationFrame(drawCircularSpectrum);
+requestAnimationFrame(testSpectrum);
