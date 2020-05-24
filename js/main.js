@@ -1,3 +1,6 @@
+let canvas = document.getElementById('visualizer');
+let canvasCtx = canvas.getContext('2d');
+
 function resizeCanvas() {
     canvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
     canvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
@@ -8,31 +11,17 @@ window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequest
 
 // Define AudioContext
 window.AudioContext = window.AudioContext || window.webkitAudioContext;
-const context = new AudioContext();
+const audioCtx = new AudioContext();
 
 const logo = new Image();
 logo.src = "https://cdn.discordapp.com/attachments/657589854082695188/712973612113592320/unknown.png";
 
-var analyzer = context.createAnalyser();
+var analyzer = audioCtx.createAnalyser();
 let streamSource = null;
-
-// If you wanna use a file instead the microphone
-// let myAudio = document.querySelector('video');
-// let streamSource = context.createMediaElementSource(myAudio);
-
-const handleSuccess = function(stream) {
-    if (stream && !streamSource) {
-        streamSource = context.createMediaStreamSource(stream);
-    }
-    streamSource.connect(analyzer); // Visualizer
-    // streamSource.connect(context.destination); // Audio output
-};
-
-let canvas = document.getElementById('visualizer');
-let canvasCtx = canvas.getContext('2d');
 
 resizeCanvas();
 
+// To be moved
 let radialGrad = canvasCtx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.height / 2.5);
 radialGrad.addColorStop(0, '#000000');
 radialGrad.addColorStop(0.2, '#02C912');
@@ -46,14 +35,18 @@ linearGrad.addColorStop(0.4, 'yellow');
 linearGrad.addColorStop(0.6, 'yellow');
 linearGrad.addColorStop(1,"red");
 
-
 // let currentSpectrum = new PointSpectrum(canvasCtx, {
 //     fillStyle: radialGrad,
 // });
 
-let currentSpectrum = new TriangleSpectrum(canvasCtx, {
-    fillStyle: radialGrad,
-    fftSize: 128
+// let currentSpectrum = new TriangleSpectrum(canvasCtx, {
+//     fillStyle: radialGrad,
+//     fftSize: 128
+// });
+
+let currentSpectrum = new VinyleSpectrum(canvasCtx, {
+    circleBase: 64,
+    rotate: true
 });
 
 // let currentSpectrum = new BarSpectrum(canvasCtx, {
@@ -91,20 +84,27 @@ function testSpectrum() {
     currentSpectrum.drawLogo(logo, canvas.width / 2, canvas.height / 2, buffer[8], canvas.height); // buffer[8] is totally arbitrary
 }
 
-navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(handleSuccess);
-
-canvas.addEventListener('click', function() {
-    if (context.state == "suspended") {
-        context.resume().then(() => {
-            handleSuccess();
-            console.log('Playback resumed successfully');
-        });
-    } else {
-        context.suspend().then(() => {
-            context.suspend();
-            console.log('Playback was suspended');
-        });
+navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then((stream) => {
+    if (stream && !streamSource) {
+        streamSource = audioCtx.createMediaStreamSource(stream);
     }
-});
 
-requestAnimationFrame(testSpectrum);
+    streamSource.connect(analyzer); // Visualizer
+    // streamSource.connect(audioCtx.destination); // Audio output
+
+    requestAnimationFrame(testSpectrum);
+
+    canvas.addEventListener('click', function() {
+        if (audioCtx.state == "suspended") {
+            audioCtx.resume().then(() => {
+                console.log('Playback resumed successfully');
+            });
+        } else {
+            audioCtx.suspend().then(() => {
+                console.log('Playback was suspended');
+            });
+        }
+    });
+}).catch((err) => {
+    console.error('Sorry but you cannot use this visualizer');
+});

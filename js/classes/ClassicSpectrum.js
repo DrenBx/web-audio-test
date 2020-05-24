@@ -11,6 +11,9 @@ class ClassicSpectrum extends AbstractSpectrum {
     draw(buffer, width, height) {
         this.context.clearRect(0, 0, width, height);
 
+        this.context.fillStyle = this.properties.fillStyle;
+        this.context.strokeStyle = this.properties.strokeStyle;
+
         let bufferLength = buffer.length;
         let barWidth = Math.round(width / bufferLength - this.properties.separator);
         let x = this.properties.separator / 2 + barWidth / 2;

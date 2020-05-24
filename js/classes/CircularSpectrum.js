@@ -10,6 +10,9 @@ class CircularSpectrum extends AbstractSpectrum {
     draw(buffer, width, height) {
         this.context.clearRect(0, 0, width, height);
 
+        this.context.fillStyle = this.properties.fillStyle;
+        this.context.strokeStyle = this.properties.strokeStyle;
+
         let x = width / 2;
         let y = height / 2;
 
